@@ -16,6 +16,7 @@ var workspace = document.getElementById("workspace")
 var restartclicked = false
 restart = document.getElementById("enditall")
 handleRS=function(e){
+  
   e.preventDefault();
   restartclicked = true
   
@@ -180,6 +181,7 @@ handleEnd = function(e){
 }
 handleStart = function(e){
   if(defaulted==true){
+    
   e.preventDefault();}else{defaulted=true}
   dragging = false
   if(e.changedTouches["1"]){
@@ -213,6 +215,7 @@ handleStart = function(e){
 }
 handleMove = function(e){
   e.preventDefault();
+    e.stopImmediatePropagation();
   if((e.changedTouches["1"]&&e.changedTouches["0"])){
     line = false
     if(tool==2&&dragging==false){canvases[activecanvas.frame][activecanvas.layer].ctxi.clearRect(0,0,1920,1080);canvases[activecanvas.frame][activecanvas.layer].ctxi.drawImage(tempcanv,0,0)}
@@ -301,9 +304,9 @@ handleMove = function(e){
     }
   }
 }
-workspace.addEventListener("touchstart",handleStart,false)
-workspace.addEventListener("touchmove",handleMove,false)
-workspace.addEventListener("touchend",handleEnd,false)
+document.addEventListener("touchstart",handleStart,false)
+document.addEventListener("touchmove",handleMove,false)
+document.addEventListener("touchend",handleEnd,false)
 restart.addEventListener("touchstart",handleRS,false)
 restart.addEventListener("touchend",handleRE,false)
 tool = 0
