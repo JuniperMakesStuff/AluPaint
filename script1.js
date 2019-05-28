@@ -1,3 +1,5 @@
+var taptarget;
+maxHist=10;
 var tempcanv = document.createElement("canvas")
 tempcanv.width = 1920
 tempcanv.height = 1080
@@ -10,6 +12,7 @@ redoe=false;
 lasty = 0;
 var tradius = 15
 var toolbar = document.getElementById("tools")
+var layers = document.getElementById("layers")
 var defaulted = false
 holdtime = 0
 var workspace = document.getElementById("workspace")
@@ -165,7 +168,7 @@ toCanvasPoint = function(x,y){
   return {x:x,y:y}
 }
 handleEnd = function(e){
-  
+  if(TAPSTARTY>45){
   tempcanv.active = false
   if(tool==0&&dragging==false){
   toHistory(true)
@@ -177,9 +180,13 @@ handleEnd = function(e){
     toHistory(true,tempcanv)
     
   }
-  
+  }
 }
 handleStart = function(e){
+  
+  taptarget = e.changedTouches["0"].target
+  TAPSTARTY = e.changedTouches["0"].pageY
+  if(TAPSTARTY>45){
   if(defaulted==true){
     
   e.preventDefault();}else{defaulted=true}
@@ -211,11 +218,13 @@ handleStart = function(e){
     lastx = pos.x
     lasty = pos.y
   }
-  }
+    
+  }}
 }
 handleMove = function(e){
+  if(TAPSTARTY>45){
   e.preventDefault();
-    e.stopImmediatePropagation();
+  
   if((e.changedTouches["1"]&&e.changedTouches["0"])){
     line = false
     if(tool==2&&dragging==false){canvases[activecanvas.frame][activecanvas.layer].ctxi.clearRect(0,0,1920,1080);canvases[activecanvas.frame][activecanvas.layer].ctxi.drawImage(tempcanv,0,0)}
@@ -302,11 +311,11 @@ handleMove = function(e){
       lastx = pos.x
       lasty = pos.y
     }
-  }
+  }}
 }
-document.addEventListener("touchstart",handleStart,false)
-document.addEventListener("touchmove",handleMove,false)
-document.addEventListener("touchend",handleEnd,false)
+document.body.addEventListener("touchstart",handleStart,false)
+document.body.addEventListener("touchmove",handleMove,false)
+document.body.addEventListener("touchend",handleEnd,false)
 restart.addEventListener("touchstart",handleRS,false)
 restart.addEventListener("touchend",handleRE,false)
 tool = 0
@@ -335,7 +344,8 @@ renderFrame = function(){
   dctx.clearRect(0,0,1920,1080)
   
   window.requestAnimationFrame(renderFrame)
-  
+  if(past.length>maxHist){past.pop()}
+  if(future.length>maxHist){future.pop()}
   for(li=canvases[activecanvas.frame].length-1;li>=0;li--){
     dctx.drawImage(canvases[activecanvas.frame][li],0,0)
   }
@@ -372,6 +382,7 @@ renderFrame = function(){
     document.getElementById("blackbottom").style.transform = "translate(0,50%)"
     workspace.style.transform = "scale(0,2)"
     toolbar.style.transform = "translate(0,-100%)"
+    layers.style.transform = "translate(0,100%)"
     document.getElementById("logounder").style.transform = "translate(100%,0%)"
     restart.style.transform = "translate("+(window.innerWidth/2-288)+"px,"+(window.innerHeight/2)+"px) translate(-50%,-50%) translate("+(50*Math.random()-25)+"px,"+(50*Math.random()-25)+"px) scale(2) rotate("+Math.pow(1+(20*holdtime),3)+"deg)"
     
@@ -395,6 +406,7 @@ renderFrame = function(){
     document.getElementById("blackbottom").style.transform = "translate(0,100%)"
     workspace.style.transform = "scale(1,1)"
     toolbar.style.transform = "translate(0,0%)"
+    layers.style.transform = "translate(0,0%)"
     document.getElementById("logounder").style.transform = "translate(0%,0%)"
     
     
