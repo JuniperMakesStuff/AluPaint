@@ -1,5 +1,12 @@
+document.getElementById("close").onclick = function(e){
+  document.getElementById("modal").style.transform = "translate(0,-300%)"
+  document.getElementById("modal-under").style.opacity = "0"
+}
+
+
 var taptarget;
-maxHist=10;
+var pendown = false;
+maxHist=20;
 var tempcanv = document.createElement("canvas")
 tempcanv.width = 1920
 tempcanv.height = 1080
@@ -52,7 +59,7 @@ var future = []
 var undo = document.getElementsByClassName("tools")[0]
 var redo = document.getElementsByClassName("tools")[1]
 var zoom = 1
-var stabilizer = 2
+var stabilizer = 1
 var lastradi = 0
 var camx = 0
 var camy = 0
@@ -97,17 +104,22 @@ undo.onclick = function(){
   past.shift()
   }
 }
-commitLine = function(can){
+commitLine = function(can,quality){
+  
   for(i=2;i<line.length;i++){
     pr = i/line.length
+    pr2 = (i+1)/line.length
     w = tradius*Math.sin(pr*Math.PI)
+    w2 = tradius*Math.sin(pr2*Math.PI)
     ow = Math.sin(pr*Math.PI)
     can.beginPath()
     can.lineCap = "round"
   can.moveTo(line[i-2].x,line[i-2].y)
     var oofx = line[i-1].x-((line[i-2].x+line[i].x)/2)
     var oofy = line[i-1].y-((line[i-2].y+line[i].y)/2)
+    var linedir = Math.atan2(line[i].x-line[i-2].x,line[i].y-line[i-2].y)
     can.quadraticCurveTo(line[i-1].x+oofx,line[i-1].y+oofy,line[i].x,line[i].y)
+    
     can.lineWidth = w
     can.stroke()
   }
@@ -127,14 +139,17 @@ var createLayer = function(z,frame){
   
   
   var list = document.getElementById("layers");
-  for(cii=0;cii<list.childNodes.length;cii++){
+  while(list.childNodes[0]){
   list.removeChild(list.childNodes[0]);
   }
-  for(cii=0;cii<canvases[activecanvas.frame].length;cii++){
+  for(cii in canvases[activecanvas.frame]){
     document.getElementById("layers").appendChild(canvases[activecanvas.frame][cii])
+    
   }
 }
+
 createLayer(0,0)
+
 var disp = document.getElementById("display")
 disp.width = 1920
 disp.height = 1080
@@ -168,11 +183,12 @@ toCanvasPoint = function(x,y){
   return {x:x,y:y}
 }
 handleEnd = function(e){
+  pendown = false
   if(TAPSTARTY>45){
   tempcanv.active = false
   if(tool==0&&dragging==false){
   toHistory(true)
-  commitLine(canvases[activecanvas.frame][activecanvas.layer].ctxi)
+  commitLine(canvases[activecanvas.frame][activecanvas.layer].ctxi,2)
   line = false
   }
   if(tool==2&&dragging==false){
@@ -183,7 +199,7 @@ handleEnd = function(e){
   }
 }
 handleStart = function(e){
-  
+  pendown = true;
   taptarget = e.changedTouches["0"].target
   TAPSTARTY = e.changedTouches["0"].pageY
   if(TAPSTARTY>45){
@@ -264,8 +280,11 @@ handleMove = function(e){
     zoom*=(diff/diff2)
     rot+=(Math.atan2(tapx1-cenx,tapy1-ceny)-Math.atan2(starttapx1-cenxl,starttapy1-cenyl))/(Math.PI*2)*-360
     dragging = true
-    camx+=cenx-cenxl
-    camy+=ceny-cenyl
+    var pirot = rot/360*Math.PI*2
+    camx+=((cenx-cenxl)*Math.cos(pirot))/zoom
+    camx+=((ceny-cenyl)*Math.sin(pirot))/zoom
+    camy+=((ceny-cenyl)*Math.cos(pirot))/zoom
+    camy-=((cenx-cenxl)*Math.sin(pirot))/zoom
     
     lastx = camx;
       lasty = camy;
@@ -289,12 +308,18 @@ handleMove = function(e){
       stable.y+=line[line.length-si].y
       sicnt = si+1
     }
-    stable.x/=sicnt
+      stable.x/=sicnt
     stable.y/=sicnt
-    line[line.length]={x:stable.x,y:stable.y}
+    for(lii=0.5;lii<1.01;lii+=0.5){
+      pox = line[line.length-1].x
+      poy = line[line.length-1].y
+    
+    line[line.length]={x:pox+(stable.x-pox)*lii,y:poy+(stable.y-poy)*lii}
    lastpos.x = pos.x
     lastpos.y = pos.y
-  lastradi = radi}
+  lastradi = radi
+    }
+    }
     if(tool==2&&dragging==false){
       var pos =toCanvasPoint(e.changedTouches["0"].pageX,e.changedTouches["0"].pageY)
       var activectx = canvases[activecanvas.frame][activecanvas.layer].ctxi
@@ -346,11 +371,15 @@ renderFrame = function(){
   window.requestAnimationFrame(renderFrame)
   if(past.length>maxHist){past.pop()}
   if(future.length>maxHist){future.pop()}
+  if(pendown==false){
   for(li=canvases[activecanvas.frame].length-1;li>=0;li--){
     dctx.drawImage(canvases[activecanvas.frame][li],0,0)
+  }}else{
+    dctx.drawImage(canvases[activecanvas.frame][activecanvas.layer],0,0)
   }
+  
   if(line!=false){
-  commitLine(dctx)
+  commitLine(dctx,1)
   }
   
   document.documentElement.style.setProperty('--zoom',zoom)
@@ -376,6 +405,20 @@ renderFrame = function(){
   for (i = 0; i < tools.length; i++) {
     tools[i].style.backgroundPosition = (-288+i*-32-96)+"px 0px"
   }
+  
+  var list = document.getElementById("layers");
+  for(cii=0;cii<list.childNodes.length;cii++){
+    if(list.childNodes[cii]==canvases[activecanvas.frame][activecanvas.layer]){
+      list.childNodes[cii].style.animation = "blink 0.5s infinite"
+    }else{
+      list.childNodes[cii].style.animation = ""
+    }
+    if(list.childNodes[cii]==taptarget){
+      activecanvas.layer = cii
+    }
+  }
+  
+  
   document.documentElement.style.filter = "brightness("+(100+900*holdtime)+"%)"
   if (restartclicked){
     document.getElementById("blacktop").style.transform = "translate(0,-50%)"
@@ -397,8 +440,11 @@ renderFrame = function(){
       restartclicked = false;
       future = []
       past = []
-      canvases = [[]]
+      activecanvas = {frame:0,layer:0}
+      canvases = [[]]//here
+      
       createLayer(0,0)
+      console.log(layers)
       line = false
     }
   }else{
