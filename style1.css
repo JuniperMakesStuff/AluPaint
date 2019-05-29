@@ -132,7 +132,7 @@ canvas:not(#display){
 .tools{
   transition:ease 0.1s;
 }
-button:not(#close){
+button:not(#close):not(#sep){
   background-color:#000000;
   background-blend-mode:screen;
   margin-left:5px;
